@@ -132,7 +132,7 @@ public class PlayerCharacterController : MonoBehaviour
         // only try to detect ground if it's been a short amount of time since last jump; otherwise we may snap to the ground instantly after we try jumping
         if (Time.time >= m_LastTimeJumped + k_JumpGroundingPreventionTime)
         {
-            print(string.Format("bot:{0} top:{1} rad:{2}", GetCapsuleBottomHemisphere(), GetCapsuleTopHemisphere(m_Controller.height), m_Controller.radius));
+            // print(string.Format("bot:{0} top:{1} rad:{2}", GetCapsuleBottomHemisphere(), GetCapsuleTopHemisphere(m_Controller.height), m_Controller.radius));
 
             // if we're grounded, collect info about the ground normal with a downward capsule cast representing our character capsule
             if (Physics.CapsuleCast(GetCapsuleBottomHemisphere(), 
@@ -210,7 +210,6 @@ public class PlayerCharacterController : MonoBehaviour
                 // jumping
                 if (isGrounded && m_InputHandler.GetJumpInputDown())
                 {
-                    Debug.LogError("is grounded and jumping");
                     // force the crouch state to false
                     if (SetCrouchingState(false, false))
                     {

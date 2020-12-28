@@ -17,6 +17,7 @@ public class PlayerInputHandler : MonoBehaviour
     public bool invertXAxis = false;
 
     PlayerCharacterController m_PlayerCharacterController;
+    bool m_FireInputWasHeld;
 
     // Start is called before the first frame update
     void Start()
@@ -28,11 +29,10 @@ public class PlayerInputHandler : MonoBehaviour
         Cursor.visible = false;
     }
 
-    // // Update is called once per frame
-    // void Update()
-    // {
-        
-    // }
+    private void LateUpdate()
+    {
+        m_FireInputWasHeld = GetFireInputHeld();
+    }
 
     public bool CanProcessInput()
     {
@@ -68,7 +68,6 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (CanProcessInput())
         {   
-            Debug.LogError(Input.GetButtonDown(GameConstants.k_ButtonNameJump));
             return Input.GetButtonDown(GameConstants.k_ButtonNameJump);
         }
 
@@ -85,15 +84,25 @@ public class PlayerInputHandler : MonoBehaviour
         return false;
     }
 
-    // public bool GetFireInputDown()
-    // {
-    //     return GetFireInputHeld() && !m_FireInputWasHeld;
-    // }
+    public bool GetSprintInputHeld()
+    {
+        if (CanProcessInput())
+        {
+            return Input.GetButton(GameConstants.k_ButtonNameSprint);
+        }
 
-    // public bool GetFireInputReleased()
-    // {
-    //     return !GetFireInputHeld() && m_FireInputWasHeld;
-    // }
+        return false;
+    }
+
+    public bool GetFireInputDown()
+    {
+        return GetFireInputHeld() && !m_FireInputWasHeld;
+    }
+
+    public bool GetFireInputReleased()
+    {
+        return !GetFireInputHeld() && m_FireInputWasHeld;
+    }
 
     public bool GetFireInputHeld()
     {
@@ -120,16 +129,6 @@ public class PlayerInputHandler : MonoBehaviour
             bool isGamepad = Input.GetAxis(GameConstants.k_ButtonNameGamepadAim) != 0f;
             bool i = isGamepad ? (Input.GetAxis(GameConstants.k_ButtonNameGamepadAim) > 0f) : Input.GetButton(GameConstants.k_ButtonNameAim);
             return i;
-        }
-
-        return false;
-    }
-
-    public bool GetSprintInputHeld()
-    {
-        if (CanProcessInput())
-        {
-            return Input.GetButton(GameConstants.k_ButtonNameSprint);
         }
 
         return false;

@@ -14,9 +14,9 @@
     public const string k_ButtonNameCrouch                  = "Crouch";
     public const string k_ButtonNameAim                     = "Aim";
     public const string k_ButtonNameGamepadAim              = "Gamepad Aim";
-    public const string k_ButtonNameSwitchWeapon            = "Mouse ScrollWheel";
-    public const string k_ButtonNameGamepadSwitchWeapon     = "Gamepad Switch";
-    public const string k_ButtonNameNextWeapon              = "NextWeapon";
+    public const string k_ButtonNameSwitchSpell            = "Mouse ScrollWheel";
+    public const string k_ButtonNameGamepadSwitchSpell     = "Gamepad Switch";
+    public const string k_ButtonNameNextSpell              = "NextSpell";
     public const string k_ButtonNamePauseMenu               = "Pause Menu";
     public const string k_ButtonNameSubmit                  = "Submit";
     public const string k_ButtonNameCancel                  = "Cancel";
