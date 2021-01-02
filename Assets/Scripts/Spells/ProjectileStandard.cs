@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 [RequireComponent(typeof(ProjectileBase))]
 public class ProjectileStandard : MonoBehaviour
@@ -83,9 +84,9 @@ public class ProjectileStandard : MonoBehaviour
         {
             m_HasTrajectoryOverride = true;
 
-            Vector3 cameraToMuzzle = (m_ProjectileBase.initialPosition - playerSpellsManager.SpellCamera.transform.position);
+            Vector3 cameraToMuzzle = m_ProjectileBase.initialPosition;
 
-            m_TrajectoryCorrectionVector = Vector3.ProjectOnPlane(-cameraToMuzzle, playerSpellsManager.SpellCamera.transform.forward);
+            m_TrajectoryCorrectionVector = Vector3.ProjectOnPlane(-cameraToMuzzle, playerSpellsManager.SpellParentSocket.transform.forward);
             if (trajectoryCorrectionDistance == 0)
             {
                 transform.position += m_TrajectoryCorrectionVector;

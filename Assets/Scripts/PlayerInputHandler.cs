@@ -18,7 +18,10 @@ public class PlayerInputHandler : MonoBehaviour
 
     PlayerCharacterController m_PlayerCharacterController;
     bool m_FireInputWasHeld;
-
+    bool m_AltInputWasHeld;
+    bool m_UtilityInputWasHeld;
+    bool m_UltimateInputWasHeld;
+    bool m_InteractInputWasHeld;
     // Start is called before the first frame update
     void Start()
     {
@@ -32,6 +35,10 @@ public class PlayerInputHandler : MonoBehaviour
     private void LateUpdate()
     {
         m_FireInputWasHeld = GetFireInputHeld();
+        m_AltInputWasHeld = GetAltInputHeld();
+        m_UtilityInputWasHeld = GetUtilityInputHeld();
+        m_UltimateInputWasHeld = GetUltimateInputHeld();
+        m_InteractInputWasHeld = GetInteractInputHeld();
     }
 
     public bool CanProcessInput()
@@ -122,15 +129,88 @@ public class PlayerInputHandler : MonoBehaviour
         return false;
     }
 
-    public bool GetAimInputHeld()
+    public bool GetAltInputDown()
+    {
+        return GetAltInputHeld() && !m_AltInputWasHeld;
+    }
+
+    public bool GetAltInputReleased()
+    {
+        return !GetAltInputHeld() && m_AltInputWasHeld;
+    }
+
+    public bool GetAltInputHeld()
     {
         if (CanProcessInput())
         {
-            bool isGamepad = Input.GetAxis(GameConstants.k_ButtonNameGamepadAim) != 0f;
-            bool i = isGamepad ? (Input.GetAxis(GameConstants.k_ButtonNameGamepadAim) > 0f) : Input.GetButton(GameConstants.k_ButtonNameAim);
-            return i;
+            bool isGamepad = Input.GetAxis(GameConstants.k_ButtonNameGamepadAlt) != 0f;
+            if (isGamepad)
+            {
+                return Input.GetAxis(GameConstants.k_ButtonNameGamepadAlt) >= triggerAxisThreshold;
+            }
+            else
+            {
+                return Input.GetButton(GameConstants.k_ButtonNameAlt);
+            }
         }
 
+        return false;
+    }
+
+    public bool GetUtilityInputDown()
+    {
+        return GetUtilityInputHeld() && !m_UtilityInputWasHeld;
+    }
+
+    public bool GetUtilityInputReleased()
+    {
+        return !GetUtilityInputHeld() && m_UtilityInputWasHeld;
+    }
+
+    public bool GetUtilityInputHeld()
+    {
+        if (CanProcessInput())
+        {
+            return Input.GetButton(GameConstants.k_ButtonNameUtility);
+        }
+        return false;
+    }
+
+    public bool GetUltimateInputDown()
+    {
+        return GetUltimateInputHeld() && !m_UltimateInputWasHeld;
+    }
+
+    public bool GetUltimateInputReleased()
+    {
+        return !GetUltimateInputHeld() && m_UltimateInputWasHeld;
+    }
+
+    public bool GetUltimateInputHeld()
+    {
+        if (CanProcessInput())
+        {
+            return Input.GetButton(GameConstants.k_ButtonNameUltimate);
+        }
+        return false;
+    }
+
+    public bool GetInteractInputDown()
+    {
+        return GetInteractInputHeld() && !m_InteractInputWasHeld;
+    }
+
+    public bool GetInteractInputReleased()
+    {
+        return !GetInteractInputHeld() && m_InteractInputWasHeld;
+    }
+
+    public bool GetInteractInputHeld()
+    {
+        if (CanProcessInput())
+        {
+            return Input.GetButton(GameConstants.k_ButtonNameInteract);
+        }
         return false;
     }
 

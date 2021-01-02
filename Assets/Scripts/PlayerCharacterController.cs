@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.AI;
 
-[RequireComponent(typeof(CharacterController), typeof(PlayerInputHandler))]
+[RequireComponent(typeof(CharacterController), typeof(PlayerInputHandler), typeof(NavMeshAgent))]
 public class PlayerCharacterController : MonoBehaviour
 {
     [Header("References")]
@@ -19,8 +20,8 @@ public class PlayerCharacterController : MonoBehaviour
     public float groundCheckDistance = 0.05f;
 
     [Header("Movement")]
-    [Tooltip("Max movement speed when grounded (when not sprinting)")]
-    public float maxSpeedOnGround = 10f;
+    // [Tooltip("Max movement speed when grounded (when not sprinting)")]
+    // // public float maxSpeedOnGround = 10f;
     [Tooltip("Sharpness for the movement when grounded, a low value will make the player accelerate and decelerate slowly, a high value will do the opposite")]
     public float movementSharpnessOnGround = 15;
     [Tooltip("Max movement speed when crouching")]
@@ -55,6 +56,8 @@ public class PlayerCharacterController : MonoBehaviour
     public float capsuleHeightCrouching = 0.9f;
     [Tooltip("Speed of crouching transitions")]
     public float crouchingSharpness = 10f;
+    [Tooltip("Focus of the player")]
+    public InteractableBase focus;
 
     public UnityAction<bool> onStanceChanged;
 
@@ -69,9 +72,11 @@ public class PlayerCharacterController : MonoBehaviour
             return 1f;
         }
     }
+    public bool paused { get; set; }
         
     PlayerInputHandler m_InputHandler;
     CharacterController m_Controller;
+    PlayerStatsController m_PlayerStatsController;
     Vector3 m_GroundNormal;
     Vector3 m_CharacterVelocity;
     Vector3 m_LatestImpactSpeed;
@@ -79,9 +84,29 @@ public class PlayerCharacterController : MonoBehaviour
     float m_CameraVerticalAngle = 0f;
     float m_footstepDistanceCounter;
     float m_TargetCharacterHeight;
+    NavMeshAgent m_NavAgent;
 
     const float k_JumpGroundingPreventionTime = 0.2f;
     const float k_GroundCheckDistanceInAir = 0.5f;
+
+    public void SetFocus(InteractableBase newFocus)
+    {
+        focus = newFocus;
+    }
+
+    public void RemoveFocus()
+    {
+        if (focus != null) {
+            focus = null;
+            if (m_NavAgent.enabled) {
+                m_NavAgent.ResetPath();
+                m_NavAgent.updatePosition = false;
+                m_NavAgent.updateRotation = false;
+                m_NavAgent.isStopped = true;
+                m_NavAgent.enabled = false;
+            }
+        }
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -93,31 +118,41 @@ public class PlayerCharacterController : MonoBehaviour
         m_InputHandler = GetComponent<PlayerInputHandler>();
         DebugUtility.HandleErrorIfNullGetComponent<PlayerInputHandler, PlayerCharacterController>(m_InputHandler, this, gameObject);
 
-        m_Controller.enableOverlapRecovery = true;
+        m_NavAgent = GetComponent<NavMeshAgent>();
+        DebugUtility.HandleErrorIfNullGetComponent<NavMeshAgent, PlayerCharacterController>(m_NavAgent, this, gameObject);
 
+        m_PlayerStatsController = GetComponent<PlayerStatsController>();
+        DebugUtility.HandleErrorIfNullGetComponent<PlayerStatsController, PlayerCharacterController>(m_PlayerStatsController, this, gameObject);
+
+        m_Controller.enableOverlapRecovery = true;
+        m_NavAgent.enabled = false;
         // force the crouch state to false when starting
         SetCrouchingState(false, true);
         UpdateCharacterHeight(true);
-
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (paused) {
+            return;
+        }
         hasJumpedThisFrame = false;
+        if (focus == null) {
+            bool wasGrounded = isGrounded;
+            GroundCheck();
+            // crouching
+            if (m_InputHandler.GetCrouchInputDown())
+            {
+                SetCrouchingState(!isCrouching, false);
+            }
 
-        bool wasGrounded = isGrounded;
-        GroundCheck();
-
-        // crouching
-        if (m_InputHandler.GetCrouchInputDown())
-        {
-            SetCrouchingState(!isCrouching, false);
+            UpdateCharacterHeight(false);
         }
 
-        // UpdateCharacterHeight(false);
-
         HandleCharacterMovement();
+
+        HandleInteractionMovement();
     }
 
     void GroundCheck()
@@ -128,7 +163,6 @@ public class PlayerCharacterController : MonoBehaviour
         // reset values before the ground check
         isGrounded = false;
         m_GroundNormal = Vector3.up;
-
         // only try to detect ground if it's been a short amount of time since last jump; otherwise we may snap to the ground instantly after we try jumping
         if (Time.time >= m_LastTimeJumped + k_JumpGroundingPreventionTime)
         {
@@ -192,13 +226,18 @@ public class PlayerCharacterController : MonoBehaviour
             float speedModifier = isSprinting ? sprintSpeedModifier : 1f;
 
             // converts move input to a worldspace vector based on our character's transform orientation
-            Vector3 worldspaceMoveInput = transform.TransformVector(m_InputHandler.GetMoveInput());
+            Vector3 inputMovement = m_InputHandler.GetMoveInput();
+            if (inputMovement.magnitude > 0) {
+                RemoveFocus();
+            } 
 
+            Vector3 worldspaceMoveInput = transform.TransformVector(inputMovement);
+            
             // handle grounded movement
             if (isGrounded)
-            {
+            {   
                 // calculate the desired velocity from inputs, max speed, and current slope
-                Vector3 targetVelocity = worldspaceMoveInput * maxSpeedOnGround * speedModifier;
+                Vector3 targetVelocity = worldspaceMoveInput * m_PlayerStatsController.moveSpeed.GetValue() * speedModifier;
                 // reduce speed if crouching by crouch speed ratio
                 if (isCrouching)
                     targetVelocity *= maxSpeedCrouchedRatio;
@@ -208,8 +247,8 @@ public class PlayerCharacterController : MonoBehaviour
                 characterVelocity = Vector3.Lerp(characterVelocity, targetVelocity, movementSharpnessOnGround * Time.deltaTime);
 
                 // jumping
-                if (isGrounded && m_InputHandler.GetJumpInputDown())
-                {
+                if (m_InputHandler.GetJumpInputDown())
+                {   
                     // force the crouch state to false
                     if (SetCrouchingState(false, false))
                     {
@@ -264,7 +303,9 @@ public class PlayerCharacterController : MonoBehaviour
         // apply the final calculated velocity value as a character movement
         Vector3 capsuleBottomBeforeMove = GetCapsuleBottomHemisphere();
         Vector3 capsuleTopBeforeMove = GetCapsuleTopHemisphere(m_Controller.height);
-        m_Controller.Move(characterVelocity * Time.deltaTime);
+        if (focus == null) {
+            m_Controller.Move(characterVelocity * Time.deltaTime);
+        }
 
         // detect obstructions to adjust velocity accordingly
         m_LatestImpactSpeed = Vector3.zero;
@@ -350,7 +391,6 @@ public class PlayerCharacterController : MonoBehaviour
                     }
                 }
             }
-
             m_TargetCharacterHeight = capsuleHeightStanding;
         }
 
@@ -361,6 +401,34 @@ public class PlayerCharacterController : MonoBehaviour
 
         isCrouching = crouched;
         return true;
+    }
+
+    void HandleInteractionMovement()
+    {
+        if (focus != null) 
+        {
+            float minDistance = focus.radius * .8f;
+            if (Vector3.Distance(focus.transform.position, m_NavAgent.transform.position) < minDistance)
+            {
+                focus.Interact(gameObject);
+                RemoveFocus();
+            } else {
+                m_NavAgent.enabled = true;
+                m_NavAgent.updatePosition = true;
+                m_NavAgent.updateRotation = true;
+                m_NavAgent.isStopped = false;
+                m_NavAgent.stoppingDistance = 0;
+                bool result = m_NavAgent.SetDestination(focus.transform.position);
+            }
+        }
+    }
+
+    public void MoveToPoint(Vector3 point) {
+        m_NavAgent.updatePosition = true;
+        m_NavAgent.updateRotation = true;
+        m_NavAgent.isStopped = false;
+        bool result = m_NavAgent.SetDestination(point);
+        print(result);
     }
 }
 

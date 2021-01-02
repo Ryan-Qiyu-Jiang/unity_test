@@ -103,7 +103,8 @@ public class SpellController : MonoBehaviour
     public float currentCharge { get; private set; }
     public Vector3 muzzleWorldVelocity { get; private set; }
     public float GetAmmoNeededToShoot() => (shootType != SpellShootType.Charge ? 1f : Mathf.Max(1f, ammoUsedOnStartCharge)) / (maxAmmo * bulletsPerShot);
-
+    private CharacterStatsController m_CharacterStatsController;
+    private float m_currentCDR = 1;
 
     const string k_AnimAttackParameter = "Attack";
 
@@ -115,6 +116,7 @@ public class SpellController : MonoBehaviour
 
     void Update()
     {
+        m_currentCDR = m_CharacterStatsController.cdr.GetValue();
         UpdateAmmo();
         UpdateCharge();
 
@@ -127,7 +129,7 @@ public class SpellController : MonoBehaviour
 
     void UpdateAmmo()
     {
-        if (m_LastTimeShot + ammoReloadDelay < Time.time && m_CurrentAmmo < maxAmmo && !isCharging)
+        if (m_LastTimeShot + ammoReloadDelay*m_currentCDR < Time.time && m_CurrentAmmo < maxAmmo && !isCharging)
         {
             // reloads Spell over time
             m_CurrentAmmo += ammoReloadRate * Time.deltaTime;
@@ -191,6 +193,8 @@ public class SpellController : MonoBehaviour
     {
         SpellRoot.SetActive(show);
         isSpellActive = show;
+        m_CharacterStatsController = owner.GetComponent<CharacterStatsController>();
+        DebugUtility.HandleErrorIfNullGetComponent<CharacterStatsController, SpellController>(m_CharacterStatsController, this, gameObject);
     }
 
     public void UseAmmo(float amount)
@@ -238,7 +242,7 @@ public class SpellController : MonoBehaviour
     bool TryShoot()
     {
         if (m_CurrentAmmo >= 1f 
-            && m_LastTimeShot + delayBetweenShots < Time.time)
+            && m_LastTimeShot + delayBetweenShots*m_currentCDR < Time.time)
         {
             HandleShoot();
             m_CurrentAmmo -= 1f;
@@ -254,7 +258,7 @@ public class SpellController : MonoBehaviour
         if (!isCharging
             && m_CurrentAmmo >= ammoUsedOnStartCharge
             && Mathf.FloorToInt((m_CurrentAmmo - ammoUsedOnStartCharge) * bulletsPerShot) > 0
-            && m_LastTimeShot + delayBetweenShots < Time.time)
+            && m_LastTimeShot + delayBetweenShots*m_currentCDR < Time.time)
         {
             UseAmmo(ammoUsedOnStartCharge);
 
@@ -291,19 +295,6 @@ public class SpellController : MonoBehaviour
             Vector3 shotDirection = GetShotDirectionWithinSpread(SpellMuzzle);
             ProjectileBase newProjectile = Instantiate(projectilePrefab, SpellMuzzle.position, Quaternion.LookRotation(shotDirection));
             newProjectile.Shoot(this);
-        }
-
-        // muzzle flash
-        if (muzzleFlashPrefab != null)
-        {
-            GameObject muzzleFlashInstance = Instantiate(muzzleFlashPrefab, SpellMuzzle.position, SpellMuzzle.rotation, SpellMuzzle.transform);
-            // Unparent the muzzleFlashInstance
-            if (unparentMuzzleFlash)
-            {
-                muzzleFlashInstance.transform.SetParent(null);
-            }
-
-            Destroy(muzzleFlashInstance, 2f);
         }
 
         m_LastTimeShot = Time.time;

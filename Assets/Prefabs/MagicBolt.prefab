@@ -86,10 +86,10 @@ MonoBehaviour:
   hittableLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  speed: 20
+  speed: 50
   gravityDownAcceleration: 0
   trajectoryCorrectionDistance: -1
-  inheritSpellVelocity: 0
+  inheritSpellVelocity: 1
   damage: 40
   radiusColor: {r: 0, g: 0.2, b: 0.2, a: 0.2}
 --- !u!114 &5905935713437121272
@@ -164,7 +164,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 9696b589cdb4cba4098dd41aa8dad540, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
