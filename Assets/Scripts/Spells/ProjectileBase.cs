@@ -3,6 +3,7 @@ using UnityEngine.Events;
 
 public class ProjectileBase : MonoBehaviour
 {
+    public float spellDamageModifier { get; private set; }
     public GameObject owner { get; private set; }
     public Vector3 initialPosition { get; private set; }
     public Vector3 initialDirection { get; private set; }
@@ -18,6 +19,7 @@ public class ProjectileBase : MonoBehaviour
         initialDirection = transform.forward;
         inheritedMuzzleVelocity = controller.muzzleWorldVelocity;
         initialCharge = controller.currentCharge;
+        spellDamageModifier = controller.spellDamageModifier;
 
         if (onShoot != null)
         {

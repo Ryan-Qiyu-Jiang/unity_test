@@ -43,6 +43,8 @@ public class SpellController : MonoBehaviour
     public SpellShootType shootType;
     [Tooltip("The projectile prefab")]
     public ProjectileBase projectilePrefab;
+    [Tooltip("The spell damage modifier")]
+    public float spellDamageModifier = 1f;
     [Tooltip("Minimum duration between two shots")]
     public float delayBetweenShots = 0.5f;
     [Tooltip("Angle for the cone in which the bullets will be shot randomly (0 means no spread at all)")]

@@ -46,16 +46,17 @@ public class InteractionSkillPickup : MonoBehaviour
         if (m_PlayerInputHandler.GetUtilityInputDown()) {
             return 2;
         }
-        if (m_PlayerInputHandler.GetUltimateInputDown()) {
-            return 3;
-        }
+        // if (m_PlayerInputHandler.GetUltimateInputDown()) {
+        //     return 3;
+        // }
         return -1;
     }
-    void OnInteract()
+
+    void OnInteract(GameObject caller)
     {
-        m_PlayerSpellsManager = m_IteractiableBase.interactionCauser.GetComponent<PlayerSpellsManager>();
-        m_PlayerCharacterController = m_IteractiableBase.interactionCauser.GetComponent<PlayerCharacterController>();
-        m_PlayerInputHandler = m_IteractiableBase.interactionCauser.GetComponent<PlayerInputHandler>();
+        m_PlayerSpellsManager = caller.GetComponent<PlayerSpellsManager>();
+        m_PlayerCharacterController = caller.GetComponent<PlayerCharacterController>();
+        m_PlayerInputHandler = caller.GetComponent<PlayerInputHandler>();
 
         m_PlayerCharacterController.paused = true;
         waitingForSpellBinding = true;

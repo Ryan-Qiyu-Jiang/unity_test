@@ -24,7 +24,6 @@ public class InteractStandard : MonoBehaviour
         PlayerCharacterController playerCharacterController = m_ProjectileBase.owner.GetComponent<PlayerCharacterController>();
         Ray ray = playerSpellsManager.spellCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
-        print("onShoot");
         if (Physics.Raycast(ray, out hit, 100))
         {
             InteractableBase interactable = hit.collider.GetComponent<InteractableBase>();
@@ -35,8 +34,6 @@ public class InteractStandard : MonoBehaviour
             } else {
                 print("not interactable");
             }
-        } else {
-            print("didn't hit anything");
         }
     }
 

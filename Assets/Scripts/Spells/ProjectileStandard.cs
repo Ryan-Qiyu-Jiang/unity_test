@@ -96,14 +96,14 @@ public class ProjectileStandard : MonoBehaviour
             {
                 m_HasTrajectoryOverride = false;
             }
-            
-            // if (Physics.Raycast(playerSpellsManager.SpellCamera.transform.position, cameraToMuzzle.normalized, out RaycastHit hit, cameraToMuzzle.magnitude, hittableLayers, k_TriggerInteraction))
-            // {
-            //     if (IsHitValid(hit))
-            //     {
-            //         OnHit(hit.point, hit.normal, hit.collider);
-            //     }
-            // }
+
+            if (Physics.Raycast(playerSpellsManager.spellCamera.transform.position, cameraToMuzzle.normalized, out RaycastHit hit, cameraToMuzzle.magnitude, hittableLayers, k_TriggerInteraction))
+            {
+                if (IsHitValid(hit.collider))
+                {
+                    OnHit(hit.collider);
+                }
+            }
         }
     }
 
@@ -154,91 +154,81 @@ public class ProjectileStandard : MonoBehaviour
             // Sphere cast
             Vector3 displacementSinceLastFrame = tip.position - m_LastRootPosition;
             RaycastHit[] hits = Physics.SphereCastAll(m_LastRootPosition, radius, displacementSinceLastFrame.normalized, displacementSinceLastFrame.magnitude, hittableLayers, k_TriggerInteraction);
-            // foreach (var hit in hits)
-            // {
-            //     if (IsHitValid(hit) && hit.distance < closestHit.distance)
-            //     {
-            //         foundHit = true;
-            //         closestHit = hit;
-            //     }
-            // }
+            foreach (var hit in hits)
+            {
+                if (IsHitValid(hit.collider) && hit.distance < closestHit.distance)
+                {
+                    foundHit = true;
+                    closestHit = hit;
+                }
+            }
 
-            // if (foundHit)
-            // {
-            //     // Handle case of casting while already inside a collider
-            //     if(closestHit.distance <= 0f)
-            //     {
-            //         closestHit.point = root.position;
-            //         closestHit.normal = -transform.forward;
-            //     }
+            if (foundHit)
+            {
+                // Handle case of casting while already inside a collider
+                if(closestHit.distance <= 0f)
+                {
+                    closestHit.point = root.position;
+                    closestHit.normal = -transform.forward;
+                }
 
-            //     OnHit(closestHit.point, closestHit.normal, closestHit.collider);
-            // }
+                OnHit(closestHit.collider);
+            }
         }
 
         m_LastRootPosition = root.position;
     }
 
-    // bool IsHitValid(RaycastHit hit)
-    // {
-    //     // ignore hits with an ignore component
-    //     if(hit.collider.GetComponent<IgnoreHitDetection>())
-    //     {
-    //         return false;
-    //     }
+    bool IsHitValid(Collider collider)
+    {   
+        // ignore hits with an ignore component
+        if(collider.GetComponent<IgnoreHitDetection>())
+        {
+            return false;
+        }
 
-    //     // ignore hits with triggers that don't have a Damageable component
-    //     if(hit.collider.isTrigger && hit.collider.GetComponent<Damageable>() == null)
-    //     {
-    //         return false;
-    //     }
+        // // ignore hits with triggers that don't have a Damageable component
+        // if(collider.isTrigger && collider.GetComponent<InteractionDamageSelf>() == null)
+        // {
+        //     return false;
+        // }
 
-    //     // ignore hits with specific ignored colliders (self colliders, by default)
-    //     if (m_IgnoredColliders != null && m_IgnoredColliders.Contains(hit.collider))
-    //     {
-    //         return false;
-    //     }
+        // ignore hits with specific ignored colliders (self colliders, by default)
+        if (m_IgnoredColliders != null && m_IgnoredColliders.Contains(collider))
+        {
+            return false;
+        }
 
-    //     return true;
-    // }
+        return true;
+    }
+    
+    void OnHit(Collider collider)
+    { 
+        // point damage
+        InteractionDamageSelf damageable = collider.GetComponent<InteractionDamageSelf>();
+        if (damageable)
+        {
+            damageable.iteractiableBase.Interact(gameObject);
+        }
 
-    // void OnHit(Vector3 point, Vector3 normal, Collider collider)
-    // { 
-    //     // damage
-    //     if (areaOfDamage)
-    //     {
-    //         // area damage
-    //         areaOfDamage.InflictDamageInArea(damage, point, hittableLayers, k_TriggerInteraction, m_ProjectileBase.owner);
-    //     }
-    //     else
-    //     {
-    //         // point damage
-    //         Damageable damageable = collider.GetComponent<Damageable>();
-    //         if (damageable)
-    //         {
-    //             damageable.InflictDamage(damage, false, m_ProjectileBase.owner);
-    //         }
-    //     }
+        // // impact vfx
+        // if (impactVFX)
+        // {
+        //     GameObject impactVFXInstance = Instantiate(impactVFX, point + (normal * impactVFXSpawnOffset), Quaternion.LookRotation(normal));
+        //     if (impactVFXLifetime > 0)
+        //     {
+        //         Destroy(impactVFXInstance.gameObject, impactVFXLifetime);
+        //     }
+        // }
 
-    //     // impact vfx
-    //     if (impactVFX)
-    //     {
-    //         GameObject impactVFXInstance = Instantiate(impactVFX, point + (normal * impactVFXSpawnOffset), Quaternion.LookRotation(normal));
-    //         if (impactVFXLifetime > 0)
-    //         {
-    //             Destroy(impactVFXInstance.gameObject, impactVFXLifetime);
-    //         }
-    //     }
+        // // impact sfx
+        // if (impactSFXClip)
+        // {
+        //     AudioUtility.CreateSFX(impactSFXClip, point, AudioUtility.AudioGroups.Impact, 1f, 3f);
+        // }
 
-    //     // impact sfx
-    //     if (impactSFXClip)
-    //     {
-    //         AudioUtility.CreateSFX(impactSFXClip, point, AudioUtility.AudioGroups.Impact, 1f, 3f);
-    //     }
-
-    //     // Self Destruct
-    //     Destroy(this.gameObject);
-    // }
+        Destroy(this.gameObject);
+    }
 
     private void OnDrawGizmosSelected()
     {
