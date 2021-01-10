@@ -255,6 +255,16 @@ public class SpellController : MonoBehaviour
         return false;
     }
 
+    public bool CanShoot()
+    {
+        return (m_CurrentAmmo >= 1f && m_LastTimeShot + delayBetweenShots*m_currentCDR < Time.time);
+    }
+
+    public float GetCurrentAmmo()
+    {
+        return m_CurrentAmmo;
+    }
+
     bool TryBeginCharge()
     {
         if (!isCharging
@@ -317,6 +327,12 @@ public class SpellController : MonoBehaviour
     public Vector3 GetShotDirectionWithinSpread(Transform shootTransform)
     {
         float spreadAngleRatio = bulletSpreadAngle / 180f;
+        if (m_CharacterStatsController.HasStatus(Status.LowPrecision)) {
+            spreadAngleRatio *= 2f;
+            if (spreadAngleRatio == 0) {
+                spreadAngleRatio = 20f/180f;
+            }
+        }
         Vector3 spreadWorldDirection = Vector3.Slerp(shootTransform.forward, UnityEngine.Random.insideUnitSphere, spreadAngleRatio);
 
         return spreadWorldDirection;

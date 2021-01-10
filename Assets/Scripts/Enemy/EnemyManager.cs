@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class EnemyManager : MonoBehaviour
 {
@@ -16,4 +17,16 @@ public class EnemyManager : MonoBehaviour
 
     public List<GameObject> allEnemies;
     public GameObject enemy;
+    public UnityAction<float> enemyDamageTaken;
+
+    void Start() {
+        CharacterStatsController stats = GetComponent<CharacterStatsController>();
+        DebugUtility.HandleErrorIfNullGetComponent<CharacterStatsController, EnemyManager>(stats, this, gameObject);
+        stats.onHealthChanged += HookDamage;
+    }
+
+    void HookDamage(float dmg) {
+        enemyDamageTaken.Invoke(dmg);
+    }
+
 }

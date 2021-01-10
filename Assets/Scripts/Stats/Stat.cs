@@ -20,7 +20,7 @@ public class Stat
 {
     [SerializeField]
     private float baseValue = 0;
-    private List<float> modifiers = new List<float>();
+    public List<float> modifiers = new List<float>();
     public List<TempModifier> temporaryModifiers = new List<TempModifier>();
     // private float currentTime = 0;
     public float GetValue () {

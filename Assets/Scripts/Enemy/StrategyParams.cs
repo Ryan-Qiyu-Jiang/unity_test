@@ -9,7 +9,7 @@ public class StrategyParams : MonoBehaviour
     public float inRange = 5f;
     public float stealthDuration = 5f;
     public float lowHealth = .25f;
-    public float timesUp = 60f*3;
+    public float timesUp = 60f*3; // the hanging wait duration
     public float exitMeleeRange = 3f;
 
     public float casterRange = 20f;
@@ -18,4 +18,7 @@ public class StrategyParams : MonoBehaviour
 
     public float returnMelee = 7f;
     public float summoningTime = 3f;
+    public float hangingWaitTime = 2f;
+    public float theHangingAnimationDuration = 5f;
+    public float fallingDuration = 15f;
 }

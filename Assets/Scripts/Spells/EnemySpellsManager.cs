@@ -23,7 +23,9 @@ public class EnemySpellsManager : MonoBehaviour
     public float recoilRestitutionSharpness = 10f;
     [Tooltip("Layer to set FPS Spell gameObjects to")]
     public LayerMask FPSSpellLayer;
-    SpellController[] m_SpellSlots = new SpellController[4]; // 9 available Spell slots
+
+    const int MaxNumSpells = 8;
+    SpellController[] m_SpellSlots = new SpellController[MaxNumSpells]; // 8 available Spell slots
     EnemyCharacterController m_EnemyCharacterController;
     Vector3 m_LastCharacterPosition;
     Vector3 m_SpellMainLocalPosition;
@@ -49,6 +51,15 @@ public class EnemySpellsManager : MonoBehaviour
             true,  // down
             true,  // hold
             true); //release
+    }
+
+    public float CastableShots(int spellIndex)
+    {
+        SpellController spell = m_SpellSlots[spellIndex];
+        if (spell.CanShoot()) {
+            return spell.GetCurrentAmmo();
+        }
+        return 0;
     }
 
     // Update various animated features in LateUpdate because it needs to override the animated arm position
@@ -81,7 +92,7 @@ public class EnemySpellsManager : MonoBehaviour
     // Switches to the given Spell index in Spell slots if the new index is a valid Spell that is different from our current one
     public void SwitchToSpellIndex(SpellController SpellPrefab, int newSpellIndex)
     {
-        if (newSpellIndex <= 4 && newSpellIndex >= 0)
+        if (newSpellIndex <= m_SpellSlots.Length && newSpellIndex >= 0)
         {
             SpellController SpellInstance = ReadySpell(SpellPrefab);
             m_SpellSlots[newSpellIndex] = SpellInstance;

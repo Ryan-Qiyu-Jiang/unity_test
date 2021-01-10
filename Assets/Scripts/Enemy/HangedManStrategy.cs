@@ -20,6 +20,15 @@ public enum HangedManState
 
 public class HangedManStrategy : EnemyStrategy
 {
+    public enum HangingState 
+    {
+        Begin,
+        ModelChange,
+        PlayAnimation,
+        RemoveWorld,
+        End
+    }
+
     EnemySpellsManager m_SpellManager;
     // Basic Attack (Interact)
     // Stealth 0
@@ -36,10 +45,14 @@ public class HangedManStrategy : EnemyStrategy
     CharacterStatsController m_SelfStats;
     PlayerStatsController m_PlayerStats;
     HangedManState m_State = HangedManState.MeleeChase;
+    HangingState m_HangingState = HangingState.Begin;
     InteractableBase m_PlayerInteractable;
     StrategyParams m_Params;
 
     GameObject m_GFX;
+    GameObject m_EnemyGraphic;
+    GameObject m_TheHangingGraphic;
+    GameObject m_Level;
 
     float m_LastTakenDamagedTime = 0;
     float m_StealthStart = 0;
@@ -49,7 +62,10 @@ public class HangedManStrategy : EnemyStrategy
     float m_cdr = 1f;
     float m_LastTimeBasic = 0f;
     float m_SummoningStart = 0f;
+    float m_HangingStartTime = 0;
     Vector3 m_PlayerPreviousPosition;
+    float m_AnimationStartTime=0;
+    float m_FallingStartTime=0;
 
     public override void Init() {
         m_SpellManager = selfGameObject.GetComponent<EnemySpellsManager>();
@@ -62,15 +78,23 @@ public class HangedManStrategy : EnemyStrategy
         m_DelayBetweenAttacks = m_SelfController.delayBetweenAttacks;
         m_cdr = m_SelfStats.cdr.GetValue();
         m_GFX = selfGameObject.transform.Find("GFX").gameObject;
+        m_EnemyGraphic = m_GFX.transform.Find("EnemyGraphic").gameObject;
+        m_TheHangingGraphic = m_GFX.transform.Find("TheHangingGraphic").gameObject;
+        m_Level = LevelsManager.instance.level;
         m_PlayerInteractable = playerGameObject.GetComponent<InteractableBase>();
+
+        PlayerManager.instance.playerDamageTaken += (dmg) => {m_DamageBalanced += dmg;};
+        EnemyManager.instance.enemyDamageTaken += (dmg) => {m_DamageBalanced -= dmg;};
     }
     
     public override void Move () {
         if (Time.time-m_TimeStarted > m_Params.timesUp) {
             m_State = HangedManState.TheHangedMan;
-            Debug.Log("the hanging has begun.");
+            // Debug.Log("the hanging has begun.");
+            TheHanging();
             return;
         }
+
         float distance = GetDistance(selfGameObject, playerGameObject);
         if (m_State == HangedManState.MeleeChase) {
             Debug.Log("MeleeChase");
@@ -160,16 +184,21 @@ public class HangedManStrategy : EnemyStrategy
             Debug.Log("CasterPanic");
             m_State = HangedManState.CasterPanic;
             Vector3 awayDirection = Vector3.Normalize(selfGameObject.transform.position - playerGameObject.transform.position);
-            Vector3 leftDirection = Vector3.Cross(awayDirection, Vector3.up);
-            Vector3 targetDirection = 0.5f*awayDirection + 0.5f*leftDirection;
-            m_SelfController.SetNavDestination(selfGameObject.transform.position + targetDirection*10f);
-            TrySpellAttack();
+            // Vector3 leftDirection = Vector3.Cross(awayDirection, Vector3.up);
+            // Vector3 targetDirection = 0.5f*awayDirection + 0.5f*leftDirection;
+            m_SelfController.SetNavDestination(selfGameObject.transform.position + awayDirection*10f);
+            TryPanicedAttack();
 
         } else if (m_State == HangedManState.CasterSummonEntrance) {
             Debug.Log("CasterSummonEntrance");
-            m_State = HangedManState.CasterSummon;
-            m_SummoningStart = Time.time;
-            m_SelfController.StopMoving();
+            m_State = HangedManState.CasterKite;
+            if (m_SpellManager.CastableShots(4) > 4) {
+                m_State = HangedManState.CasterSummon;
+                m_SelfController.StopMoving();
+                m_SummoningStart = Time.time;
+            } else {
+                m_State = HangedManState.CasterKite;
+            }
 
         } else if (m_State == HangedManState.CasterSummon) {
             Debug.Log("CasterSummon");
@@ -182,9 +211,58 @@ public class HangedManStrategy : EnemyStrategy
             Debug.Log("MeleeEntrance");
             m_State = HangedManState.MeleeChase;
             SwitchToMeleeMoveSpeed();
-
         }
+
         m_PlayerPreviousPosition = playerGameObject.transform.position;
+    }
+
+    void TheHanging() {
+        if (m_HangingState == HangingState.Begin) {
+            Debug.Log("Begin");
+            m_GFX.SetActive(true);
+            m_SelfController.StopMoving();
+            m_PlayerController.RemoveFocus();
+            m_PlayerController.paused = true;
+            if (Time.time - m_TimeStarted - m_Params.timesUp > m_Params.hangingWaitTime) {
+                m_HangingState = HangingState.ModelChange;
+            }
+
+        } else if (m_HangingState == HangingState.ModelChange) {
+            Debug.Log("ModelChange");
+            m_HangingState = HangingState.PlayAnimation;
+            m_TheHangingGraphic.SetActive(true);
+            m_EnemyGraphic.SetActive(false);
+            m_AnimationStartTime = Time.time;
+            
+        } else if (m_HangingState == HangingState.PlayAnimation) {
+            Debug.Log("PlayAnimation");
+            if (Time.time - m_AnimationStartTime > m_Params.theHangingAnimationDuration) {
+                m_FallingStartTime = Time.time;
+                m_PlayerController.gravityDownForce = 15f;
+                m_HangingState = HangingState.RemoveWorld;
+            }
+            Transform playerTransform = playerGameObject.transform;
+            Transform transform = selfGameObject.transform;
+            Vector3 lookDir = Vector3.Normalize(transform.position - playerTransform.position);
+            Quaternion lookRotation = Quaternion.LookRotation(lookDir);
+            playerTransform.rotation = Quaternion.Slerp(playerTransform.rotation, lookRotation, Time.deltaTime * 5f);
+
+            lookDir = Vector3.Normalize(playerTransform.position-transform.position);
+            lookRotation = Quaternion.LookRotation(lookDir);
+            transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 1f);
+
+        } else if (m_HangingState == HangingState.RemoveWorld) {
+            Debug.Log("RemoveWorld");
+            if (Time.time-m_FallingStartTime < m_Params.fallingDuration) {
+                m_Level.SetActive(false);
+                m_PlayerStats.TakeDamage(0.2f);
+                m_PlayerController.paused = false;
+            } else {
+                m_HangingState = HangingState.End;
+            }
+        } else {
+            Debug.Log("End.");
+        }
     }
 
     float GetDistance(GameObject a, GameObject b) {
@@ -200,6 +278,7 @@ public class HangedManStrategy : EnemyStrategy
     private bool TryBasicAttack()
     {
         if (m_LastTimeBasic + m_DelayBetweenAttacks*m_cdr < Time.time) {
+            m_PlayerInteractable.Interact(selfGameObject);
             m_PlayerInteractable.Interact(selfGameObject);
             m_LastTimeBasic = Time.time;
             m_GFX.SetActive(true);
@@ -226,6 +305,12 @@ public class HangedManStrategy : EnemyStrategy
                 TryCastPierce();
             }
         }
+    }
+
+    private void TryPanicedAttack() {
+        Aim();
+        m_SpellManager.CastSpell(3);
+        m_SpellManager.CastSpell(2);
     }
 
     private void TryCastSmite() {
@@ -274,13 +359,10 @@ public class HangedManStrategy : EnemyStrategy
         futurePosition.y = Mathf.Clamp(futurePosition.y, 0.5f, 3f); // ignore crazy jumps until we calculate gravity
 
         selfGameObject.transform.LookAt(futurePosition);
-
     }
 
     private void Aim() {
         selfGameObject.transform.LookAt(playerGameObject.transform);
     }
-
-
 
 }

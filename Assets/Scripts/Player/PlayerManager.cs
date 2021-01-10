@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class PlayerManager : MonoBehaviour
 {
@@ -16,4 +17,16 @@ public class PlayerManager : MonoBehaviour
 
     public List<GameObject> allPlayers;
     public GameObject player;
+
+    public UnityAction<float> playerDamageTaken;
+
+    void Start() {
+        CharacterStatsController stats = GetComponent<CharacterStatsController>();
+        DebugUtility.HandleErrorIfNullGetComponent<CharacterStatsController, PlayerManager>(stats, this, gameObject);
+        stats.onHealthChanged += HookDamage;
+    }
+
+    void HookDamage(float dmg) {
+        playerDamageTaken.Invoke(dmg);
+    }
 }
