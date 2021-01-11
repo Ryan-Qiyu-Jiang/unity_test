@@ -52,7 +52,9 @@ public class HangedManStrategy : EnemyStrategy
     GameObject m_GFX;
     GameObject m_EnemyGraphic;
     GameObject m_TheHangingGraphic;
+    GameObject m_MobileHealthBar;
     GameObject m_Level;
+    EnemyAnimator m_Animator;
 
     float m_LastTakenDamagedTime = 0;
     float m_StealthStart = 0;
@@ -78,9 +80,11 @@ public class HangedManStrategy : EnemyStrategy
         m_DelayBetweenAttacks = m_SelfController.delayBetweenAttacks;
         m_cdr = m_SelfStats.cdr.GetValue();
         m_GFX = selfGameObject.transform.Find("GFX").gameObject;
+        m_MobileHealthBar = m_GFX.transform.Find("MobileHealthBar").gameObject;
         m_EnemyGraphic = m_GFX.transform.Find("EnemyGraphic").gameObject;
-        m_TheHangingGraphic = m_GFX.transform.Find("TheHangingGraphic").gameObject;
+        m_TheHangingGraphic = m_EnemyGraphic.transform.Find("Rope").gameObject;
         m_Level = LevelsManager.instance.level;
+        m_Animator = selfGameObject.GetComponent<EnemyAnimator>();
         m_PlayerInteractable = playerGameObject.GetComponent<InteractableBase>();
 
         PlayerManager.instance.playerDamageTaken += (dmg) => {m_DamageBalanced += dmg;};
@@ -231,7 +235,9 @@ public class HangedManStrategy : EnemyStrategy
             Debug.Log("ModelChange");
             m_HangingState = HangingState.PlayAnimation;
             m_TheHangingGraphic.SetActive(true);
-            m_EnemyGraphic.SetActive(false);
+            m_Animator.PlayHangingAnimation();
+            m_MobileHealthBar.SetActive(false);
+            // m_EnemyGraphic.SetActive(false);
             m_AnimationStartTime = Time.time;
             
         } else if (m_HangingState == HangingState.PlayAnimation) {
@@ -278,7 +284,6 @@ public class HangedManStrategy : EnemyStrategy
     private bool TryBasicAttack()
     {
         if (m_LastTimeBasic + m_DelayBetweenAttacks*m_cdr < Time.time) {
-            m_PlayerInteractable.Interact(selfGameObject);
             m_PlayerInteractable.Interact(selfGameObject);
             m_LastTimeBasic = Time.time;
             m_GFX.SetActive(true);

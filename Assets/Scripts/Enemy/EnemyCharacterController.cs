@@ -111,7 +111,7 @@ public class EnemyCharacterController : MonoBehaviour
     public void StopMoving()
     {
         m_NavAgent.isStopped = true;
-        m_NavAgent.ResetPath();
+        // m_NavAgent.ResetPath();
     }
     
     public void RemoveFocus()

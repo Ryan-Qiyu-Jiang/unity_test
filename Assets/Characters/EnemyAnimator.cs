@@ -20,4 +20,12 @@ public class EnemyAnimator : MonoBehaviour
         float speedPercent = m_navMeshAgent.velocity.magnitude / m_navMeshAgent.speed;
         m_animator.SetFloat("speedPercent", speedPercent, animationTransitionTime, Time.deltaTime);
     }
+
+    public void PlayHangingAnimation()
+    {
+        m_animator.SetTrigger("hanging");
+        m_animator.SetLayerWeight(0,0);
+        m_animator.SetLayerWeight(1,1);
+        m_animator.SetLayerWeight(2,1);
+    }
 }
